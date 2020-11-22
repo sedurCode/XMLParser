@@ -1,10 +1,2 @@
-<main>
-    <inner key="value" another="one more">
-        <more>I am deep</more> 
-    </inner>
-    <another>I am shallow</another>
-</main>
-
-<another>
-This should work too
-</another>
+<?xml version="1.0" encoding="UTF-8" ?>
+<main key="value">This is a description</main>
