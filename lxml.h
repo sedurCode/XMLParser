@@ -102,10 +102,18 @@ XMLNode* XMLNode_child(XMLNode* parent, int index);
 char* XMLNode_attribute_value(XMLNode* node, char* key);
 
 // Implementations
+
+enum _TagType
+{
+    TAG_START,
+    TAG_INLINE
+};
+typedef enum _TagType TagType;
+
 /** static void parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode* current_node)
  * 
  */
-static void parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode* current_node)
+static TagType parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode* current_node)
 {
     XMLAttribute currentAttribute = {0, 0};
     // Read the beginning of the tag of the node into the buffer
@@ -128,7 +136,6 @@ static void parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode
         if(lex[(*lexi)-1] == ' ')
         {
             (*lexi)--;
-            continue;
         }
         // If we hit an equals, we have the attribute key in the buffer
         if (buffer[(*i)] == '=')
@@ -144,7 +151,7 @@ static void parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode
             if (!currentAttribute.key)
             {
                 fprintf(stderr, "Value  %s has no key at node %s \n", lex, current_node->tag);
-                return;// FALSE;
+                return TAG_START;// FALSE;
             }
             (*lexi) = 0;
             (*i)++;
@@ -165,7 +172,19 @@ static void parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLNode
             (*i)++;
             continue;
         }
+        // Inline node handling
+        if (buffer[(*i)-1] == '/' && buffer[(*i)] == '>')
+        {
+            lex[(*lexi)]= '\0';
+            if(!current_node->tag)
+            {
+                current_node->tag = strdup(lex);
+            }
+            (*i)++;
+            return TAG_INLINE;
+        }
     }
+    return TAG_START;
 }
 
 /** bool XMLDocument_load(XMLDocument* doc, const char* path)
@@ -302,7 +321,12 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
             // Progress document pointer
             i++;
             // Parse attributes
-            parse_attributes(buffer, &i, lex, &lexi, current_node);
+            if(parse_attributes(buffer, &i, lex, &lexi, current_node) == TAG_INLINE)
+            {
+                current_node = current_node->parent;
+                i++;
+                continue;
+            }
             // Reset index to lex buffer
             lex[lexi]= '\0';
             if (!current_node->tag)

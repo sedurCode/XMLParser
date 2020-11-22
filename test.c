@@ -9,8 +9,12 @@ int main()
         printf("Num Children of Root: %d \n", doc.root->children.size);
         XMLNode* main_node = XMLNode_child(doc.root, 0);
         printf("Main node: %s => %s \n", main_node->tag, main_node->inner_text);
-        XMLAttribute* attribute = &main_node->attributes.data[0];
-        printf(" %s => %s \n", attribute->key, attribute->value); 
+        for (int i = 0; i < main_node->children.size; i++)
+        {
+            XMLNode* field = XMLNode_child(main_node, i);
+            printf("   %s => %s \n", XMLNode_attribute_value(field, "name"), XMLNode_attribute_value(field, "type"));
+        }
+
         int c = 0;
         while( c++ < 1000000 ); // you can use sleep but for this you dont need #import
         {//Wait for some time to print before we free
