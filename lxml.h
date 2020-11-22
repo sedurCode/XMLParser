@@ -20,11 +20,27 @@
 #define FALSE 0
 #endif
 
+struct _XMLAttribute
+{
+    char* key;
+    char* value;
+};
+typedef struct _XMLAttribute XMLAttribute;
+
+struct _XMLAttributeList
+{
+    int heap_size;
+    int size;
+    XMLAttribute* data;
+};
+typedef struct _XMLAttributeList XMLAttributeList;
+
 struct _XMLNode
 {
     char* tag;
     char* inner_text;
     struct _XMLNode* parent;
+    XMLAttributeList attributes;
 };
 typedef struct _XMLNode XMLNode;
 
@@ -40,13 +56,17 @@ int XMLDocument_load(XMLDocument* doc, const char* path);
 void XMLDocument_free(XMLDocument* doc);
 XMLNode* XMLNode_new(XMLNode* parent);
 void XMLNode_free(XMLNode* node);
+// XMLAttribute* XMLAttribute_new(XMLNode* parent);
+void XMLAttribute_free(XMLAttribute* attribute);
+void XMLAttributeList_init(XMLAttributeList* list);
+void XMLAttributeList_free(XMLAttributeList* list);
+void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute);
 
 // Implementations
 
 /** bool XMLDocument_load(XMLDocument* doc, const char* path)
  * 
  */
-
 int XMLDocument_load(XMLDocument* doc, const char* path)
 {
     DEBUG_PRINT("opening file %s \n", path);
@@ -144,16 +164,71 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
             }
             // Progress document pointer
             i++;
-            // Read the tag of the node into the buffer
+            //
+            XMLAttribute currentAttribute = {0, 0};
+            // Read the beginning of the tag of the node into the buffer
             while (buffer[i] != '>')
             {
                 lex[lexi++] = buffer[i++];
+                // If we have it a patch of whitespace and we have not written a tag yet, lex buffer now has the tag
+                if(buffer[i] == ' ' && !current_node->tag)
+                {
+                    lex[lexi]= '\0';
+                    // Create a new string with the same content as what we just read and assign to the tag of the node
+                    current_node->tag = strdup(lex);
+                    DEBUG_PRINT("Tag of new node is %s \n", current_node->tag);
+                    // Reset index to lex buffer
+                    lexi = 0;
+                    i++; 
+                    continue;
+                }
+                // unusally ignore spaces
+                if(lex[lexi-1] == ' ')
+                {
+                    lexi--;
+                    continue;
+                }
+                // If we hit an equals, we have the attribute key in the buffer
+                if (buffer[i] == '=')
+                {
+                    lex[lexi]= '\0';
+                    currentAttribute.key = strdup(lex);
+                    lexi = 0;
+                    continue;
+                }
+                // attribute value
+                if (buffer[i] == '"')
+                {
+                    if (!currentAttribute.key)
+                    {
+                        fprintf(stderr, "Value  %s has no key at node %s \n", lex, current_node->tag);
+                        return FALSE;
+                    }
+                    lexi = 0;
+                    i++;
+                    while(buffer[i] != '"')
+                    {
+                        lex[lexi++] = buffer[i++];
+                    }
+                    lex[lexi]= '\0';
+                    currentAttribute.value = strdup(lex);
+                    XMLAttributeList_add(&current_node->attributes, &currentAttribute);
+                    // Reset current attribute placeholder to empty
+                    currentAttribute.key = NULL;
+                    currentAttribute.key = NULL;
+                    lexi = 0;
+                    i++;
+                    continue;
+                }
             }
-            lex[lexi]= '\0';
-            // Create a new string with the same content as what we just read and assign to the tag of the node
-            current_node->tag = strdup(lex);
-            DEBUG_PRINT("Tag of new node is %s \n", current_node->tag);
             // Reset index to lex buffer
+            lex[lexi]= '\0';
+            if (!current_node->tag)
+            {
+                // Create a new string with the same content as what we just read and assign to the tag of the node
+                current_node->tag = strdup(lex);
+                DEBUG_PRINT("Tag of new node is %s \n", current_node->tag);
+            }
             lexi = 0; 
             i++; // Move on to the body
             continue;
@@ -184,6 +259,7 @@ XMLNode* XMLNode_new(XMLNode* parent)
     node->parent = parent;
     node->tag = NULL;
     node->inner_text = NULL;
+    XMLAttributeList_init(&node->attributes);
     return node;
 }
 
@@ -201,7 +277,48 @@ void XMLNode_free(XMLNode* node)
     {
         free(node->inner_text);
     }
+    for (int index = 0; index < node->attributes.size; index++)
+    {
+        XMLAttribute_free(&node->attributes.data[index]);
+    }
     free(node);
+}
+
+/** void XMLAttribute_free(XMLAttribute* attribute)
+ */ 
+void XMLAttribute_free(XMLAttribute* attribute)
+{
+    free(attribute->key);
+    free(attribute->value);
+}
+
+/** void XMLAttributeList_init(XMLAttributeList* list)
+ */ 
+void XMLAttributeList_init(XMLAttributeList* list)
+{
+    list->heap_size = 1;
+    list->size = 0;
+    list->data = (XMLAttribute*) malloc(sizeof(XMLAttribute) * list->heap_size);
+}
+
+/** void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute)
+ */ 
+void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute)
+{
+    // ensure that our list size does not go beyond the heap have made available
+    while(list->size >= list->heap_size)
+    {
+        list->heap_size *= 2;
+        list->data = (XMLAttribute*) realloc(list->data, sizeof(XMLAttribute) * list->heap_size);
+    }
+    list->data[list->size++] = *attribute;
+}
+
+/** void XMLAttributeList_free(XMLAttributeList* list)
+ */ 
+void XMLAttributeList_free(XMLAttributeList* list)
+{
+
 }
 
 #endif // LITTLE_XML_H
