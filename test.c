@@ -12,7 +12,8 @@ int main()
         printf("Another node: %s => %s \n", another_node->tag, another_node->inner_text);
         int c = 0;
         while( c++ < 1000000 ); // you can use sleep but for this you dont need #import
-        {//Wait for some time to print before we free} 
+        {//Wait for some time to print before we free
+        } 
         XMLDocument_free(&doc);
     }
     return 0;
