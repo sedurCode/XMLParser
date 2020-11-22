@@ -1,1 +1,10 @@
-<root key="value" another="one more">I am root</root>
+<main>
+    <inner key="value" another="one more">
+        <more>I am deep</more> 
+    </inner>
+    <another>I am shallow</another>
+</main>
+
+<another>
+This should work too
+</another>

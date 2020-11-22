@@ -12,6 +12,10 @@
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT printf
 #endif
+#else
+#ifndef DEBUG_PRINT
+#define DEBUG_PRINT 
+#endif
 #endif
 #ifndef TRUE
 #define TRUE 1
@@ -19,6 +23,14 @@
 #ifndef FALSE
 #define FALSE 0
 #endif
+
+struct _XMLNodeList
+{
+    int heap_size;
+    int size;
+    struct _XMLNode** data;
+};
+typedef struct _XMLNodeList XMLNodeList;
 
 struct _XMLAttribute
 {
@@ -41,6 +53,7 @@ struct _XMLNode
     char* inner_text;
     struct _XMLNode* parent;
     XMLAttributeList attributes;
+    XMLNodeList children;
 };
 typedef struct _XMLNode XMLNode;
 
@@ -61,6 +74,10 @@ void XMLAttribute_free(XMLAttribute* attribute);
 void XMLAttributeList_init(XMLAttributeList* list);
 void XMLAttributeList_free(XMLAttributeList* list);
 void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute);
+void XMLNodeList_init(XMLNodeList* list);
+void XMLNodeList_free(XMLNodeList* list);
+void XMLNodeList_add(XMLNodeList* list, XMLNode* node);
+XMLNode* XMLNode_child(XMLNode* parent, int index);
 
 // Implementations
 
@@ -96,7 +113,7 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
     int lexi = 0;
     int i = 0;
 
-    XMLNode* current_node = NULL;
+    XMLNode* current_node = doc->root;
 
     // While loop that parses the document into new nodes
     while(buffer[i] != '\0')
@@ -152,16 +169,9 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
             } else {DEBUG_PRINT("Not end node\n");}
 
             // We are at a new node, so prepare current_node for the new node
-            if (!current_node)
-            {
-                DEBUG_PRINT("Current node is root\n");
-                // If at the bottom, parent is root
-                current_node = doc->root;
-            } else {
-                DEBUG_PRINT("Parent node of new node is %s \n", current_node->tag);
-                // Parent is the last node
-                current_node = XMLNode_new(current_node);
-            }
+            DEBUG_PRINT("Parent node of new node is %s \n", current_node->tag);
+            // Parent is the last node
+            current_node = XMLNode_new(current_node);
             // Progress document pointer
             i++;
             //
@@ -213,9 +223,12 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
                     lex[lexi]= '\0';
                     currentAttribute.value = strdup(lex);
                     XMLAttributeList_add(&current_node->attributes, &currentAttribute);
+                    // Free the buffer holding the current attributes data
+                    free(&currentAttribute.key);
+                    free(&currentAttribute.value);
                     // Reset current attribute placeholder to empty
                     currentAttribute.key = NULL;
-                    currentAttribute.key = NULL;
+                    currentAttribute.value = NULL;
                     lexi = 0;
                     i++;
                     continue;
@@ -260,6 +273,11 @@ XMLNode* XMLNode_new(XMLNode* parent)
     node->tag = NULL;
     node->inner_text = NULL;
     XMLAttributeList_init(&node->attributes);
+    XMLNodeList_init(&node->children);
+    if(parent)
+    {
+        XMLNodeList_add(&parent->children, node);
+    }
     return node;
 }
 
@@ -269,6 +287,9 @@ XMLNode* XMLNode_new(XMLNode* parent)
  */ 
 void XMLNode_free(XMLNode* node)
 {
+    DEBUG_PRINT("Entered free of node %s \n", node->tag);
+    DEBUG_PRINT("Freeing children of node %s \n", node->tag);
+    XMLNodeList_free(&node->children);
     if(node->tag)
     {
         free(node->tag);
@@ -319,6 +340,56 @@ void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute)
 void XMLAttributeList_free(XMLAttributeList* list)
 {
 
+}
+
+/** void XMLNodeList_init(XMLNodeList* list)
+ */ 
+void XMLNodeList_init(XMLNodeList* list)
+{
+    list->heap_size = 1;
+    list->size = 0;
+    list->data = (XMLNode**) malloc(sizeof(XMLNode*) * list->heap_size);
+}
+
+/** void XMLNodeList_free(XMLNodeList* list);
+ * 
+ * 
+ */
+void XMLNodeList_free(XMLNodeList* list)
+{
+    if (list->data)
+    {
+        for (int index = 0; index < list->size; index++)
+        {
+            XMLNode_free(list->data[index]);
+        }
+    }
+    list->size = 0;
+    list->heap_size = 0;
+}
+
+/** void XMLNodeList_add(XMLNodeList* list, XMLNode* node); 
+ * 
+ * 
+ */
+void XMLNodeList_add(XMLNodeList* list, XMLNode* node)
+{
+    // ensure that our list size does not go beyond the heap have made available
+    while(list->size >= list->heap_size)
+    {
+        list->heap_size *= 2;
+        list->data = (XMLNode**) realloc(list->data, sizeof(XMLNode*) * list->heap_size);
+    }
+    list->data[list->size++] = node;
+}
+
+/** XMLNode* XMLNode_child(XMLNode* parent, int index)
+ * 
+ * 
+ */
+XMLNode* XMLNode_child(XMLNode* parent, int index)
+{
+   return parent->children.data[index]; 
 }
 
 #endif // LITTLE_XML_H
