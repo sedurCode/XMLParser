@@ -94,7 +94,6 @@ void XMLNode_free(XMLNode* node);
 // XMLAttribute* XMLAttribute_new(XMLNode* parent);
 void XMLAttribute_free(XMLAttribute* attribute);
 void XMLAttributeList_init(XMLAttributeList* list);
-void XMLAttributeList_free(XMLAttributeList* list);
 void XMLAttributeList_add(XMLAttributeList* list, XMLAttribute* attribute);
 void XMLNodeList_init(XMLNodeList* list);
 void XMLNodeList_free(XMLNodeList* list);
@@ -167,9 +166,6 @@ static TagType parse_attributes(char* buffer, int* i, char* lex, int* lexi, XMLN
             lex[(*lexi)]= '\0';
             currentAttribute.value = strdup(lex);
             XMLAttributeList_add(&current_node->attributes, &currentAttribute);
-            // Free the buffer holding the current attributes data
-            free(&currentAttribute.key);
-            free(&currentAttribute.value);
             // Reset current attribute placeholder to empty
             currentAttribute.key = NULL;
             currentAttribute.value = NULL;
@@ -492,19 +488,7 @@ void XMLNode_free(XMLNode* node)
     {
         free(node->inner_text);
     }
-    for (int index = 0; index < node->attributes.size; index++)
-    {
-        XMLAttribute_free(&node->attributes.data[index]);
-    }
     free(node);
-}
-
-/** void XMLAttribute_free(XMLAttribute* attribute)
- */ 
-void XMLAttribute_free(XMLAttribute* attribute)
-{
-    free(attribute->key);
-    free(attribute->value);
 }
 
 /** void XMLAttributeList_init(XMLAttributeList* list)

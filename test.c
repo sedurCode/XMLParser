@@ -24,7 +24,7 @@ int main()
         XMLDocument_write(&doc, "./out.xml", 4);
 
         int c = 0;
-        while( c++ < 1000000 ); // you can use sleep but for this you dont need #import
+        while( c++ < 1000000 ) // you can use sleep but for this you dont need #import
         {//Wait for some time to print before we free
         } 
         XMLDocument_free(&doc);
