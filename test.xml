@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<structure>
-    <field name="a" type="biquad"/>
-    <field name="b" type="FIR"/>
-    <dummy/>
+<structure name="Person">
+    <field name="name" type="string"/>
+    <field age="age" type="int"/>
+    <description>This defines a person</description>
 </structure>

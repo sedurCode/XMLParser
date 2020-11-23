@@ -21,6 +21,8 @@ int main()
             printf("   %s => %s \n", XMLNode_attribute_value(field, "name"), XMLNode_attribute_value(field, "type"));
         }
 
+        XMLDocument_write(&doc, "./out.xml", 4);
+
         int c = 0;
         while( c++ < 1000000 ); // you can use sleep but for this you dont need #import
         {//Wait for some time to print before we free

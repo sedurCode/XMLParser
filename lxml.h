@@ -87,6 +87,7 @@ typedef struct _XMLDocument XMLDocument;
 // Forward declaration
 
 int XMLDocument_load(XMLDocument* doc, const char* path);
+int XMLDocument_write(XMLDocument* doc, const char* path, int indent);
 void XMLDocument_free(XMLDocument* doc);
 XMLNode* XMLNode_new(XMLNode* parent);
 void XMLNode_free(XMLNode* node);
@@ -353,6 +354,102 @@ int XMLDocument_load(XMLDocument* doc, const char* path)
     // if we succeeded, return true
     return TRUE;
 } 
+
+static void node_out(FILE* file, XMLNode* node, int indent, int times)
+{
+    // For all child nodes
+    for (int i = 0; i < node->children.size; i++)
+    {
+        // Get the node
+        XMLNode* child = XMLNode_child(node, i);
+        //Apply spacing
+        if (times>0)
+        {
+            fprintf(file, "%*s", indent * times, " ");
+        }
+        // Write out tag
+        fprintf(file, "<%s", child->tag);
+        // Write out non-null attributes of node
+        for (int j = 0; j < child->attributes.size; j++)
+        {
+            XMLAttribute attribute = child->attributes.data[j];
+            if((!attribute.value) || (!strcmp(attribute.value, "")))
+            {
+                continue;
+            }
+            fprintf(file, " %s=\"%s\"", attribute.key, attribute.value);
+        }
+        // If simple, make a one-line tag
+        if ((child->children.size == 0)&&(!child->inner_text))
+        {
+            fprintf(file, " />\n");
+        } else {
+            // If node has children, start writing those on a new line.
+            // If node has no children but does that innertext, write the innertext on this line.
+            if(child->children.size == 0)
+            {
+                fprintf(file, ">");
+            } else {
+                fprintf(file, ">\n");
+            }
+            // If node has no children but does have innertext
+            // Write the innertext and end the node on this line
+            if((child->children.size == 0)&&(child->inner_text))
+            {
+                fprintf(file, "%s</%s>\n", child->inner_text, child->tag);
+            } else {
+                // If there are children, enter the children and begin recursive writeout call
+                if(child->children.size > 0)
+                {
+                    node_out(file, child, indent, times + 1);
+                }
+                // If we have innertext
+                if(child->inner_text)
+                {
+                    // Apply indent
+                    if (times > 0)
+                    {
+                        fprintf(file, "%*s", indent * times, " ");
+                    }
+                    // Writeout innertext and newline the closing tag
+                    fprintf(file, "%s\n", child->inner_text);
+                }
+                // Writeout indent
+                if (times > 0)
+                {
+                    fprintf(file, "%*s", indent * times, " ");
+                }
+                // Closing tag after some combination of children and potentially inner text
+                fprintf(file, "</%s>\n", child->tag);
+            }
+        }
+    }
+}
+
+/** int XMLDocument_write(XMLDocument* doc, const char* path, int indent)
+ * 
+ * 
+ */
+int XMLDocument_write(XMLDocument* doc, const char* path, int indent)
+{
+    FILE* file = fopen(path, "w");
+    if (!file)
+    {
+        fprintf(stderr, "Failed to open file '%s' \n", path);
+        return FALSE;
+    }
+    // Write out XML header
+    fprintf(file, "<?xml version=\"%s\" encoding=\"%s\" ?>\n", 
+    (doc->version) ? doc->version : "1.0", 
+    (doc->encoding) ? doc->encoding : "UTF-8"
+    );
+
+    node_out(file, doc->root, indent, 0);
+
+    // close file
+    fclose(file);
+    return TRUE;
+}
 
 void XMLDocument_free(XMLDocument* doc)
 {
