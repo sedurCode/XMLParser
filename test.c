@@ -8,10 +8,16 @@ int main()
         printf("XML encoding: %s \n", doc.encoding);
         printf("Num Children of Root: %d \n", doc.root->children.size);
         XMLNode* main_node = XMLNode_child(doc.root, 0);
-        printf("Main node: %s => %s \n", main_node->tag, main_node->inner_text);
-        for (int i = 0; i < main_node->children.size; i++)
+        //printf("Main node: %s => %s \n", main_node->tag, main_node->inner_text);
+
+        XMLNodeList* fields = XMLNode_children(main_node, "field");
+
+
+        for (int i = 0; i < fields->size; i++)
         {
-            XMLNode* field = XMLNode_child(main_node, i);
+            XMLNode* field = XMLNodeList_at(fields, i);
+            XMLAttribute* attribute = XMLNode_attribute(field, "type");
+            attribute->value = "";
             printf("   %s => %s \n", XMLNode_attribute_value(field, "name"), XMLNode_attribute_value(field, "type"));
         }
 

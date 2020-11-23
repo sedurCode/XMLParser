@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <structure>
-    <member name="a" type="biquad"/>
-    <member name="b" type="FIR"/>
+    <field name="a" type="biquad"/>
+    <field name="b" type="FIR"/>
+    <dummy/>
 </structure>

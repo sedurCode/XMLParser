@@ -7,7 +7,7 @@
 #include <string.h>
 
 // Deffinitions
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT printf
@@ -100,6 +100,10 @@ void XMLNodeList_free(XMLNodeList* list);
 void XMLNodeList_add(XMLNodeList* list, XMLNode* node);
 XMLNode* XMLNode_child(XMLNode* parent, int index);
 char* XMLNode_attribute_value(XMLNode* node, char* key);
+XMLNode* XMLNodeList_at(XMLNodeList* list, int index);
+XMLNodeList* XMLNode_children(XMLNode* parent, const char* tag);
+XMLAttribute* XMLNode_attribute(XMLNode* node, char* key);
+
 
 // Implementations
 
@@ -496,6 +500,50 @@ char* XMLNode_attribute_value(XMLNode* node, char* key)
         if(!strcmp(tAttrib.key, key))
         {
             return tAttrib.value;
+        }
+    }
+    return NULL;
+}
+
+/** XMLNode* XMLNodeList_at(XMLNodeList* list, int index);
+ * Get a node at a point in the node list
+ */
+XMLNode* XMLNodeList_at(XMLNodeList* list, int index)
+{
+    return list->data[index];
+}
+
+/** XMLNodeList* XMLNode_children(XMLNode* node)
+ * returns the nodelist of child nodes from an XMLNode
+ * Should be 'child by name'
+ */
+XMLNodeList* XMLNode_children(XMLNode* parent, const char* tag)
+{
+    XMLNodeList* list = (XMLNodeList*) malloc(sizeof(XMLNodeList));
+    XMLNodeList_init(list);
+    for (int i = 0; i < parent->children.size; i++)
+    {
+        XMLNode* child = XMLNode_child(parent, i);
+        if (!strcmp(child->tag, tag))
+        {
+            XMLNodeList_add(list, child);
+        }
+    }
+    return list;
+}
+
+/** XMLAttribute* XMLNode_attribute(XMLNode* node, char* key)
+ * 
+ * 
+ */ 
+XMLAttribute* XMLNode_attribute(XMLNode* node, char* key)
+{
+    for (int i = 0; i < node->attributes.size; i++)
+    {
+        XMLAttribute* tAttrib = &node->attributes.data[i];
+        if(!strcmp(tAttrib->key, key))
+        {
+            return tAttrib;
         }
     }
     return NULL;
